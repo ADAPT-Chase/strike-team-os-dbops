@@ -1,0 +1,106 @@
+# DBOps Port Registry - 18xxx Standard
+# This is the new gospel - all services must use 18xxx ports
+# Last Updated: 2025-09-23
+# Maintainer: Vector, Systems Engineer & Database Architect
+
+## Port Assignments (18000-18999)
+
+### Core Storage & Coordination
+- **18000** - DragonFly (Redis-compatible) - Primary
+- **18001** - DragonFly (Redis-compatible) - Secondary/Cluster
+- **18002** - DragonFly (Redis-compatible) - Admin/Metrics
+- **18003** - Qdrant Vector DB - HTTP API
+- **18004** - Qdrant Vector DB - gRPC API
+- **18005** - Qdrant Vector DB - Cluster P2P
+- **18010** - Redis Cluster Node 1
+- **18011** - Redis Cluster Node 2
+- **18012** - Redis Cluster Node 3
+- **18013** - Redis Cluster Sentinel (if needed)
+- **18020** - PostgreSQL/TimescaleDB - Primary
+- **18021** - PostgreSQL/TimescaleDB - Streaming/Replication
+- **18030** - ScyllaDB - Native Binary (CQL)
+- **18031** - ScyllaDB - Thrift API
+- **18032** - ScyllaDB - JMX/Metrics
+- **18040** - Neo4j - Bolt Protocol
+- **18041** - Neo4j - HTTP API
+- **18042** - Neo4j - HTTPS API
+
+### Streaming & Messaging
+- **18050** - Apache Pulsar - Broker
+- **18051** - Apache Pulsar - Admin API
+- **18052** - Apache Pulsar - Proxy
+- **18090** - Redpanda - Kafka API
+- **18091** - Redpanda - Admin API
+- **18092** - Redpanda - Proxy API
+- **18093** - Redpanda - Schema Registry
+
+### Vector & Search Layer
+- **18100** - Fluentd - Log Collection
+- **18110** - Weaviate - HTTP API
+- **18111** - Weaviate - gRPC API
+- **18120** - Milvus - Vector Database
+- **18121** - Milvus - Proxy/Metrics
+- **18130** - Vespa - Search Engine
+- **18131** - Vespa - Admin API
+- **18140** - FAISS Service
+- **18150** - Meilisearch
+- **18160** - OpenSearch
+- **18161** - OpenSearch Dashboards
+
+### Object Storage & Distributed Systems
+- **18170** - MinIO - S3 API
+- **18171** - MinIO - Console Web UI
+- **18172** - MinIO - Health/Metrics
+- **18180** - IPFS - API
+- **18181** - IPFS - Swarm
+- **18182** - IPFS - Gateway
+
+### Time Series & Metrics
+- **18200** - InfluxDB - HTTP API
+- **18201** - InfluxDB - Query/Write
+- **18210** - TimescaleDB - (shares PostgreSQL 18020)
+
+### Graph Layer
+- **18220** - JanusGraph - Gremlin Server
+- **18221** - JanusGraph - Configuration API
+- **18222** - JanusGraph - Metrics
+
+### Coordination & Configuration
+- **18230** - etcd - Client API
+- **18231** - etcd - Peer Communication
+- **18232** - etcd - Metrics
+
+### Orchestration & Pipelines
+- **18240** - Haystack - RAG Pipeline API
+- **18241** - Haystack - Document Processing
+- **18242** - Haystack - Query API
+
+### Query & Analytics
+- **18250** - Trino - Distributed SQL
+- **18251** - Trino - UI/Web Interface
+- **18260** - Presto (alternative to Trino)
+
+### Development & Testing
+- **18990** - SQLite - HTTP Bridge (if needed)
+- **18991** - Elasticsearch - Dev/Test
+- **18992** - Development Services Range (18992-18999)
+
+## Port Conflicts Resolution
+- **Previous Qdrant**: 17000/17001 → **MOVED TO 18003/18004**
+- **Previous Gremlin**: 17002 → **MOVED TO 18220**
+- **Previous Redis**: 17542 → **MOVED TO 18030 (Scylla)**
+
+## Service Status Tracking
+- ✅ **18000-18001** - DragonFly (running)
+- ✅ **18003-18005** - Qdrant (running)
+- ✅ **18010-18012** - Redis Cluster (running)
+- ✅ **18020** - PostgreSQL (running)
+- ✅ **18040-18042** - Neo4j (running)
+- ✅ **18090-18091** - Redpanda (running)
+- ✅ **18110** - Weaviate (running) - MOVED FROM 18060
+- ✅ **18080** - Trino (running)
+- ✅ **18100** - Fluentd (running)
+- ✅ **18170-18172** - MinIO (running) - MOVED FROM 18024-18025
+- 🚧 **18220-18222** - JanusGraph (needs restart)
+- 🚧 **18030-18032** - ScyllaDB (needs configuration)
+- 🚧 **Remaining services** - need deployment
