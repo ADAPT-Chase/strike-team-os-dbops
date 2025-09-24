@@ -70,6 +70,10 @@
 - **18231** - etcd - Peer Communication
 - **18232** - etcd - Metrics
 
+### Vector Databases
+- **18270** - ChromaDB - Vector Database API
+- **18271** - FAISS - Vector Index Service
+
 ### Orchestration & Pipelines
 - **18240** - Haystack - RAG Pipeline API
 - **18241** - Haystack - Document Processing
