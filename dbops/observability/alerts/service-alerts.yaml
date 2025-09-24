@@ -1,0 +1,146 @@
+# Database Service Alerts
+# DBOps Managed - Do not modify without review
+
+groups:
+- name: database.service
+  interval: 30s
+  rules:
+  # Service Availability
+  - alert: DatabaseServiceDown
+    expr: up{job=~"dragonfly|redis-cluster|qdrant|minio"} == 0
+    for: 1m
+    labels:
+      severity: critical
+      service: "{{ $labels.job }}"
+    annotations:
+      summary: "Database service {{ $labels.job }} is down"
+      description: "Database service {{ $labels.job }} on {{ $labels.instance }} has been down for more than 1 minute"
+      runbook: "/runbooks/{{ $labels.job }}/failover.md"
+
+  # Memory Usage
+  - alert: HighMemoryUsage
+    expr: (process_resident_memory_bytes{job=~"dragonfly|redis-cluster|qdrant|minio"} / process_virtual_memory_max_bytes) * 100 > 85
+    for: 5m
+    labels:
+      severity: warning
+      service: "{{ $labels.job }}"
+    annotations:
+      summary: "High memory usage on {{ $labels.job }}"
+      description: "{{ $labels.job }} memory usage is {{ $value }}% for more than 5 minutes"
+      runbook: "/runbooks/{{ $labels.job }}/performance.md"
+
+  - alert: CriticalMemoryUsage
+    expr: (process_resident_memory_bytes{job=~"dragonfly|redis-cluster|qdrant|minio"} / process_virtual_memory_max_bytes) * 100 > 95
+    for: 2m
+    labels:
+      severity: critical
+      service: "{{ $labels.job }}"
+    annotations:
+      summary: "Critical memory usage on {{ $labels.job }}"
+      description: "{{ $labels.job }} memory usage is {{ $value }}% for more than 2 minutes"
+      runbook: "/runbooks/{{ $labels.job }}/performance.md"
+
+  # CPU Usage
+  - alert: HighCPUUsage
+    expr: rate(process_cpu_seconds_total{job=~"dragonfly|redis-cluster|qdrant|minio"}[5m]) * 100 > 80
+    for: 10m
+    labels:
+      severity: warning
+      service: "{{ $labels.job }}"
+    annotations:
+      summary: "High CPU usage on {{ $labels.job }}"
+      description: "{{ $labels.job }} CPU usage is {{ $value }}% for more than 10 minutes"
+      runbook: "/runbooks/{{ $labels.job }}/performance.md"
+
+  # Redis Specific Alerts
+  - alert: RedisHighEvictionRate
+    expr: rate(redis_evicted_keys_total[5m]) > 10
+    for: 5m
+    labels:
+      severity: warning
+      service: "redis"
+    annotations:
+      summary: "High Redis eviction rate"
+      description: "Redis is evicting {{ $value }} keys per second, consider increasing memory"
+      runbook: "/runbooks/redis/performance.md"
+
+  - alert: RedisConnectionsHigh
+    expr: redis_connected_clients > 80
+    for: 5m
+    labels:
+      severity: warning
+      service: "redis"
+    annotations:
+      summary: "High Redis connections"
+      description: "Redis has {{ $value }} active connections, approaching limit"
+      runbook: "/runbooks/redis/performance.md"
+
+  # Qdrant Specific Alerts
+  - alert: QdrantHighLatency
+    expr: histogram_quantile(0.95, rate(qdrant_request_duration_seconds_bucket[5m])) > 0.1
+    for: 5m
+    labels:
+      severity: warning
+      service: "qdrant"
+    annotations:
+      summary: "High Qdrant query latency"
+      description: "Qdrant 95th percentile latency is {{ $value }}s for more than 5 minutes"
+      runbook: "/runbooks/qdrant/performance.md"
+
+  - alert: QdrantStorageHigh
+    expr: (qdrant_storage_used_bytes / qdrant_storage_total_bytes) * 100 > 85
+    for: 5m
+    labels:
+      severity: warning
+      service: "qdrant"
+    annotations:
+      summary: "Qdrant storage usage high"
+      description: "Qdrant storage usage is {{ $value }}%, consider cleanup or expansion"
+      runbook: "/runbooks/qdrant/performance.md"
+
+  # MinIO Specific Alerts
+  - alert: MinIODiskHigh
+    expr: (minio_disk_used_bytes / minio_disk_total_bytes) * 100 > 85
+    for: 5m
+    labels:
+      severity: warning
+      service: "minio"
+    annotations:
+      summary: "MinIO disk usage high"
+      description: "MinIO disk usage is {{ $value }}%, consider cleanup or expansion"
+      runbook: "/runbooks/minio/performance.md"
+
+  # Cluster Health
+  - alert: RedisClusterDegraded
+    expr: redis_cluster_state != 1
+    for: 1m
+    labels:
+      severity: critical
+      service: "redis-cluster"
+    annotations:
+      summary: "Redis cluster state degraded"
+      description: "Redis cluster is in degraded state, check cluster health"
+      runbook: "/runbooks/redis/cluster/failover.md"
+
+  # Backup Alerts
+  - alert: BackupFailed
+    expr: increase(dbops_backup_errors_total[24h]) > 0
+    for: 1m
+    labels:
+      severity: critical
+      service: "backup"
+    annotations:
+      summary: "Database backup failed"
+      description: "{{ $value }} backup failures in the last 24 hours"
+      runbook: "/backups/disaster-recovery.md"
+
+  - alert: BackupStale
+    expr: time() - dbops_backup_last_success_timestamp_seconds > 86400
+    for: 1m
+    labels:
+      severity: warning
+      service: "backup"
+    annotations:
+      summary: "Database backup stale"
+      description: "Last successful backup was more than 24 hours ago"
+      runbook: "/backups/disaster-recovery.md"

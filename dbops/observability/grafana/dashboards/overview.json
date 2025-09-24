@@ -1,0 +1,88 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Database Operations Overview",
+    "description": "Comprehensive overview of all database services",
+    "tags": ["dbops", "overview"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Service Status",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "up{job=~\"dragonfly|redis-cluster|qdrant|minio\"}",
+            "legendFormat": "{{job}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "Memory Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes{job=~\"dragonfly|redis-cluster|qdrant|minio\"}",
+            "legendFormat": "{{job}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 3,
+        "title": "CPU Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(process_cpu_seconds_total{job=~\"dragonfly|redis-cluster|qdrant|minio\"}[5m])",
+            "legendFormat": "{{job}}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Redis Operations",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(redis_commands_total[5m])",
+            "legendFormat": "commands/sec"
+          },
+          {
+            "expr": "rate(redis_keyspace_hits_total[5m])",
+            "legendFormat": "hits/sec"
+          },
+          {
+            "expr": "rate(redis_keyspace_misses_total[5m])",
+            "legendFormat": "misses/sec"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}
+      },
+      {
+        "id": 5,
+        "title": "Qdrant Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "qdrant_collections_count",
+            "legendFormat": "collections"
+          },
+          {
+            "expr": "qdrant_vectors_count",
+            "legendFormat": "vectors"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16}
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}

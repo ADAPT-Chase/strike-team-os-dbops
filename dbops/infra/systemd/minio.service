@@ -1,0 +1,41 @@
+[Unit]
+Description=MinIO Object Storage
+Documentation=https://min.io/
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=x
+Group=x
+WorkingDirectory=/data/databases/minio
+Environment=MINIO_ROOT_USER=minio_nova_access_2025
+Environment=MINIO_ROOT_PASSWORD=minio_nova_secret_2025_secure
+Environment=MINIO_OPTS="--console-address :18025 --address :18024"
+ExecStart=/usr/local/bin/minio server /data/databases/minio/data
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+
+# Security (relaxed for compatibility)
+NoNewPrivileges=false
+PrivateTmp=false
+ProtectSystem=false
+ProtectHome=false
+ReadWritePaths=/data/databases/minio
+ReadWritePaths=/var/log/minio
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Memory management
+MemoryMax=2G
+MemoryHigh=1.5G
+
+# Performance
+CPUSchedulingPolicy=rr
+CPUSchedulingPriority=40
+
+[Install]
+WantedBy=multi-user.target

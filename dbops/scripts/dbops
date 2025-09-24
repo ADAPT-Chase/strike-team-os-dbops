@@ -1,0 +1,274 @@
+#!/bin/bash
+
+# DBOps - Database Operations Control Script
+# Usage: ./dbops <command> [options]
+# DBOps Managed - Do not modify without review
+
+set -euo pipefail
+
+# Configuration
+DBOPS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONFIG_DIR="$DBOPS_ROOT/configs"
+SCRIPTS_DIR="$DBOPS_ROOT/scripts"
+LOG_DIR="/var/log/dbops"
+MAINTENANCE_FILE="/etc/dbops/maintenance.token"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Logging
+log() {
+    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')]${NC} $1"
+}
+
+warn() {
+    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] WARNING:${NC} $1"
+}
+
+error() {
+    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ERROR:${NC} $1" >&2
+}
+
+info() {
+    echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] INFO:${NC} $1"
+}
+
+# Check maintenance mode
+check_maintenance() {
+    if [[ ! -f "$MAINTENANCE_FILE" ]]; then
+        error "Maintenance mode not active. Create $MAINTENANCE_FILE with maintenance window details."
+        exit 1
+    fi
+
+    local window=$(cat "$MAINTENANCE_FILE")
+    info "Maintenance window: $window"
+}
+
+# Health check function
+health_check() {
+    local engine="$1"
+    local port="$2"
+    local health_cmd="$3"
+
+    info "Checking $engine health on port $port..."
+
+    if eval "$health_cmd" >/dev/null 2>&1; then
+        log "$engine is healthy"
+        return 0
+    else
+        warn "$engine health check failed"
+        return 1
+    fi
+}
+
+# Service management
+service_action() {
+    local action="$1"
+    local service="$2"
+
+    case "$action" in
+        start|stop|restart|status)
+            sudo systemctl "$action" "$service"
+            ;;
+        *)
+            error "Invalid action: $action"
+            exit 1
+            ;;
+    esac
+}
+
+# Main commands
+case "${1:-}" in
+    health)
+        log "Running comprehensive health check..."
+
+        # Check each service
+        health_check "PostgreSQL" "5432" "pg_isready -h localhost -p 5432"
+        health_check "DragonFly" "18000" "redis-cli -h localhost -p 18000 -a torrent_cluster_auth ping"
+        health_check "Redis-1" "18010" "redis-cli -h localhost -p 18010 -a torrent_cluster_auth ping"
+        health_check "Redis-2" "18011" "redis-cli -h localhost -p 18011 -a torrent_cluster_auth ping"
+        health_check "Redis-3" "18012" "redis-cli -h localhost -p 18012 -a torrent_cluster_auth ping"
+        health_check "Qdrant" "18001" "curl -s http://localhost:18001/ | grep -q qdrant"
+
+        info "Health check completed"
+        ;;
+
+    start)
+        check_maintenance
+        service="$2"
+        if [[ -z "$service" ]]; then
+            error "Service name required"
+            exit 1
+        fi
+        info "Starting $service..."
+        service_action "start" "$service"
+        ;;
+
+    stop)
+        check_maintenance
+        service="$2"
+        if [[ -z "$service" ]]; then
+            error "Service name required"
+            exit 1
+        fi
+        info "Stopping $service..."
+        service_action "stop" "$service"
+        ;;
+
+    restart)
+        check_maintenance
+        service="$2"
+        if [[ -z "$service" ]]; then
+            error "Service name required"
+            exit 1
+        fi
+        info "Restarting $service..."
+        service_action "restart" "$service"
+        ;;
+
+    status)
+        service="$2"
+        if [[ -z "$service" ]]; then
+            # Show all services
+            info "Service Status:"
+            systemctl status dragonfly redis-cluster@{1,2,3} qdrant minio --no-pager
+        else
+            service_action "status" "$service"
+        fi
+        ;;
+
+    logs)
+        service="$2"
+        if [[ -z "$service" ]]; then
+            error "Service name required"
+            exit 1
+        fi
+        journalctl -u "$service" -f
+        ;;
+
+    backup)
+        check_maintenance
+        engine="$2"
+        if [[ -z "$engine" ]]; then
+            error "Engine name required"
+            exit 1
+        fi
+
+        info "Starting backup for $engine..."
+        "$SCRIPTS_DIR/backup-$engine.sh"
+        ;;
+
+    restore)
+        check_maintenance
+        engine="$2"
+        backup_file="$3"
+        if [[ -z "$engine" || -z "$backup_file" ]]; then
+            error "Engine and backup file required"
+            exit 1
+        fi
+
+        info "Starting restore for $engine from $backup_file..."
+        "$SCRIPTS_DIR/restore-$engine.sh" "$backup_file"
+        ;;
+
+    maintenance)
+        action="$2"
+        case "$action" in
+            start)
+                if [[ -f "$MAINTENANCE_FILE" ]]; then
+                    warn "Maintenance mode already active"
+                    exit 1
+                fi
+                echo "Maintenance window: $(date)" | sudo tee "$MAINTENANCE_FILE"
+                log "Maintenance mode activated"
+                ;;
+            stop)
+                if [[ ! -f "$MAINTENANCE_FILE" ]]; then
+                    warn "Maintenance mode not active"
+                    exit 1
+                fi
+                sudo rm -f "$MAINTENANCE_FILE"
+                log "Maintenance mode deactivated"
+                ;;
+            status)
+                if [[ -f "$MAINTENANCE_FILE" ]]; then
+                    info "Maintenance mode active: $(cat "$MAINTENANCE_FILE")"
+                else
+                    info "Maintenance mode inactive"
+                fi
+                ;;
+            *)
+                error "Usage: $0 maintenance {start|stop|status}"
+                exit 1
+                ;;
+        esac
+        ;;
+
+    config)
+        action="$2"
+        engine="$3"
+        case "$action" in
+            validate)
+                if [[ -z "$engine" ]]; then
+                    error "Engine name required"
+                    exit 1
+                fi
+                info "Validating $engine configuration..."
+                # Add validation logic here
+                ;;
+            show)
+                if [[ -z "$engine" ]]; then
+                    error "Engine name required"
+                    exit 1
+                fi
+                info "Showing $engine configuration..."
+                find "$CONFIG_DIR/$engine" -name "*.conf" -o -name "*.yaml" | head -10
+                ;;
+            *)
+                error "Usage: $0 config {validate|show} <engine>"
+                exit 1
+                ;;
+        esac
+        ;;
+
+    --help|-h)
+        cat << EOF
+DBOps - Database Operations Control Script
+
+Usage: $0 <command> [options]
+
+Commands:
+  health                    Run comprehensive health check
+  start <service>           Start a service (requires maintenance mode)
+  stop <service>            Stop a service (requires maintenance mode)
+  restart <service>         Restart a service (requires maintenance mode)
+  status [service]          Show service status
+  logs <service>            Follow service logs
+  backup <engine>           Backup specified engine (requires maintenance mode)
+  restore <engine> <file>   Restore engine from backup (requires maintenance mode)
+  maintenance {start|stop|status}  Control maintenance mode
+  config {validate|show} <engine>  Configuration management
+  --help                    Show this help message
+
+Services:
+  dragonfly, redis-cluster@{1,2,3}, qdrant, minio
+
+Examples:
+  $0 health
+  $0 start dragonfly
+  $0 backup postgresql
+  $0 maintenance start
+
+EOF
+        ;;
+
+    *)
+        error "Unknown command: $1"
+        error "Use --help for usage information"
+        exit 1
+        ;;
+esac

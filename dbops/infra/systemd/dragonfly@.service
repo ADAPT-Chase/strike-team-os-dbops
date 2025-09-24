@@ -1,0 +1,35 @@
+[Unit]
+Description=DragonFly Redis-compatible Database Node %i
+Documentation=https://www.dragonflydb.io/
+After=network.target
+Wants=network.target
+PartOf=dragonfly-cluster.target
+
+[Service]
+Type=simple
+User=x
+Group=x
+WorkingDirectory=/data/databases/data/dragonfly/%i
+ExecStart=/data/databases/dragonfly/dragonfly --port 1800%i --dir /data/databases/data/dragonfly/%i/data --dbfilename dump-%i --maxmemory 8gb --requirepass torrent_cluster_auth --cluster_mode emulated --logtostderr
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+
+# Security (relaxed for compatibility)
+NoNewPrivileges=false
+PrivateTmp=false
+ProtectSystem=false
+ProtectHome=false
+ReadWritePaths=/data/databases/data/dragonfly
+ReadWritePaths=/var/log/dragonfly
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Memory management
+MemoryMax=10G
+MemoryHigh=8G
+
+[Install]
+WantedBy=multi-user.target

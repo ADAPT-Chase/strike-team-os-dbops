@@ -1,0 +1,35 @@
+[Unit]
+Description=Redis Cluster Node %i
+Documentation=https://redis.io/
+After=network.target
+Wants=network.target
+PartOf=redis-cluster.target
+
+[Service]
+Type=notify
+User=x
+Group=x
+WorkingDirectory=/data/databases/data/redis/node%i
+ExecStart=/usr/bin/redis-server /data/databases/dbops/configs/redis/cluster/base/redis.conf --port 1800%i --cluster-config-file nodes-%i.conf --cluster-announce-port 1800%i --cluster-announce-bus-port 1800%i
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/data/databases/data/redis
+ReadWritePaths=/var/log/redis
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Memory management
+MemoryMax=3G
+MemoryHigh=2.5G
+
+[Install]
+WantedBy=multi-user.target

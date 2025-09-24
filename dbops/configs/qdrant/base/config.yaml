@@ -1,0 +1,72 @@
+# Qdrant Configuration
+# DBOps Managed - Do not hand-edit
+
+service:
+  # HTTP API endpoint
+  http_port: 18003
+  # gRPC API endpoint
+  grpc_port: 18004
+  # Bind address
+  host: 0.0.0.0
+  # Enable CORS
+  enable_cors: true
+  # Enable telemetry (disable in prod)
+  enable_telemetry: false
+  # API key for authentication (set in env-specific configs)
+  api_key: ""
+  # Read-only mode
+  read_only: false
+
+# Storage configuration
+storage:
+  # Path to storage
+  storage_path: /data/databases/data/qdrant/storage
+  # Path for snapshots
+  snapshots_path: /data/databases/data/qdrant/snapshots
+  # Store vectors on disk
+  on_disk_payload: true
+  # Cache size (bytes)
+  cache_size: 1000000000  # 1GB
+  # Memory map limit
+  mmap_limit: 10000000000  # 10GB
+
+# Snapshots configuration
+snapshots:
+  # Create snapshot interval (seconds)
+  snapshot_interval: 3600
+  # Keep last N snapshots
+  snapshot_retention: 24
+  # Compress snapshots
+  compression: zstd
+  # Verify snapshots after creation
+  verify: true
+
+# Performance tuning
+performance:
+  # Max number of parallel requests
+  max_workers: 0
+  # Max request size (bytes)
+  max_request_size_mb: 32
+  # Serve snapshots from storage
+  serve_snapshots_from_storage: true
+
+# Logging configuration
+log_level: INFO
+
+# Cluster configuration (for multi-node)
+cluster:
+  enabled: false
+  # P2P port for cluster communication
+  p2p_port: 18005
+  # Consensus timeout
+  consensus_timeout_ms: 10000
+
+# Backup configuration
+backup:
+  # Enable backup to S3
+  s3:
+    enabled: false
+    bucket: ""
+    region: ""
+    access_key: ""
+    secret_key: ""

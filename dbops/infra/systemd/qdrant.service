@@ -1,0 +1,41 @@
+[Unit]
+Description=Qdrant Vector Database
+Documentation=https://qdrant.tech/
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=x
+Group=x
+WorkingDirectory=/data/databases/qdrant
+Environment=QDRANT__SERVICE__HTTP_PORT=18003
+Environment=QDRANT__SERVICE__GRPC_PORT=18004
+ExecStart=/usr/local/bin/qdrant --config-path /data/databases/dbops/configs/qdrant/base/config.yaml
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+
+# Security (relaxed for compatibility)
+NoNewPrivileges=false
+PrivateTmp=false
+ProtectSystem=false
+ProtectHome=false
+ReadWritePaths=/data/databases/qdrant
+ReadWritePaths=/data/databases/data/qdrant
+ReadWritePaths=/var/log/qdrant
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Memory management
+MemoryMax=4G
+MemoryHigh=3.5G
+
+# Performance
+CPUSchedulingPolicy=rr
+CPUSchedulingPriority=50
+
+[Install]
+WantedBy=multi-user.target
