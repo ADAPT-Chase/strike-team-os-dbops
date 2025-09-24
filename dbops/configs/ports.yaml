@@ -101,6 +101,8 @@
 - ✅ **18080** - Trino (running)
 - ✅ **18100** - Fluentd (running)
 - ✅ **18170-18172** - MinIO (running) - MOVED FROM 18024-18025
-- 🚧 **18220-18222** - JanusGraph (needs restart)
-- 🚧 **18030-18032** - ScyllaDB (needs configuration)
+- ✅ **18200** - InfluxDB (running) - **NEWLY DEPLOYED**
+- ⚠️ **18991** - Elasticsearch (Java issues) - **PARTIALLY DEPLOYED**
+- ⚠️ **18220-18222** - JanusGraph (OOM issues) - **PARTIALLY DEPLOYED**
+- 🚧 **18030-18032** - ScyllaDB (NOT INSTALLED)
 - 🚧 **Remaining services** - need deployment
